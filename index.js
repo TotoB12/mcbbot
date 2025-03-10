@@ -5,21 +5,22 @@ const tools = require('./tools')
 const { TaskQueue, Task } = require('./tasks')
 
 const bot_username = process.env.MC_USERNAME
+const admin_username = process.env.MC_ADMIN
 
 const bot = mineflayer.createBot({
-  host: 'localhost', // minecraft server ip
-  username: bot_username, // username to join as if auth is `offline`, else a unique identifier for this account. Switch if you want to change accounts
-  auth: 'offline', // for offline mode servers, you can set this to 'offline'
-  port: 25565,              // set if you need a port that isn't 25565
-  version: "1.21.1",           // only set if you need a specific version or snapshot (ie: "1.8.9" or "1.16.5"), otherwise it's set automatically
-  // password: '12345678'      // set if you want to use password-based auth (may be unreliable). If specified, the `username` must be an email
+  host: 'localhost',
+  username: bot_username,
+  auth: 'offline',
+  port: 25565,
+  version: "1.21.1",
 })
 
 // Load the pathfinder plugin
 bot.loadPlugin(pathfinder)
 
-// Initialize the task queue
+// Initialize the task queue and track current task
 const taskQueue = new TaskQueue()
+let currentTask = null
 
 bot.once('spawn', () => {
   bot.chat('I\'m alive!')
@@ -39,7 +40,6 @@ bot.on('chat', async (username, message) => {
   // Handle different commands
   switch (command) {
     case 'come':
-      // Add come command to the task queue
       taskQueue.addTask(new Task(
         bot,
         username,
@@ -49,23 +49,43 @@ bot.on('chat', async (username, message) => {
       ));
       break;
 
+    case 'follow':
+      taskQueue.addTask(new Task(
+        bot,
+        username,
+        command,
+        originalCommand,
+        () => tools.followPlayer(bot, username)
+      ));
+      break;
+
+    case 'stop':
+      await tools.stopCurrentTask(bot, taskQueue, username, currentTask);
+      break;
+
     case 'echo':
     case 'say':
-      // Execute echo/say commands immediately
       const echoMessage = commandWithPrefix.substring(command.length + 1);
       await tools.echoMessage(bot, echoMessage);
       break;
 
     case 'tasks':
-      // Execute tasks command immediately
       await tools.listTasks(bot, taskQueue);
       break;
 
     default:
-      bot.chat(`Unknown command: ${command}. Try 'come', 'echo', 'say', or 'tasks'.`);
+      bot.chat(`Unknown command: ${command}. Try 'come', 'follow', 'stop', 'echo', 'say', or 'tasks'.`);
       break;
   }
 })
+
+// Update current task when queue processes
+taskQueue.onTaskStart = (task) => {
+  currentTask = task;
+}
+taskQueue.onTaskEnd = () => {
+  currentTask = null;
+}
 
 // Log errors and kick reasons:
 bot.on('kicked', console.log)
