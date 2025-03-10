@@ -28,12 +28,12 @@ bot.once('spawn', () => {
 bot.on('chat', async (username, message) => {
   if (username === bot.username) return
   if (!message.startsWith(bot_username)) return
-  
+
   const originalCommand = message;
   const commandWithPrefix = message.slice(bot_username.length + 1);
   const commandParts = commandWithPrefix.split(' ');
   const command = commandParts[0].toLowerCase();
-  
+
   console.log(`Received command: ${command}.`);
 
   // Handle different commands
@@ -48,19 +48,19 @@ bot.on('chat', async (username, message) => {
         () => tools.moveToPlayer(bot, username)
       ));
       break;
-      
+
     case 'echo':
     case 'say':
       // Execute echo/say commands immediately
       const echoMessage = commandWithPrefix.substring(command.length + 1);
       await tools.echoMessage(bot, echoMessage);
       break;
-      
+
     case 'tasks':
       // Execute tasks command immediately
       await tools.listTasks(bot, taskQueue);
       break;
-      
+
     default:
       bot.chat(`Unknown command: ${command}. Try 'come', 'echo', 'say', or 'tasks'.`);
       break;
