@@ -15,12 +15,19 @@ const bot = mineflayer.createBot({
   version: "1.21.1",
 })
 
-// Load the pathfinder plugin
 bot.loadPlugin(pathfinder)
 
-// Initialize the task queue and track current task
 const taskQueue = new TaskQueue()
 let currentTask = null
+
+// Define allowed blocks for mining
+const allowedBlocks = [
+  "coal_ore", "deepslate_coal_ore", "copper_ore", "deepslate_copper_ore",
+  "iron_ore", "deepslate_iron_ore", "gold_ore", "deepslate_gold_ore",
+  "redstone_ore", "deepslate_redstone_ore", "lapis_ore", "deepslate_lapis_ore",
+  "diamond_ore", "deepslate_diamond_ore", "emerald_ore", "deepslate_emerald_ore",
+  "nether_quartz_ore", "nether_gold_ore", "ancient_debris"
+]
 
 bot.once('spawn', () => {
   bot.chat('I\'m alive!')
@@ -45,13 +52,6 @@ bot.on('playerLeft', (player) => {
   bot.chat(`Bye ${player.username}`)
 })
 
-bot.on('playerCollect', (collector, collected) => {
-  if (collector.type === 'player') {
-    const item = collected.getDroppedItem()
-    bot.chat(`${collector.username !== bot.username ? ("I'm so jealous. " + collector.username) : 'I '} collected ${item.count} ${item.displayName}`)
-  }
-})
-
 bot.on('entityCrouch', (entity) => {
   bot.chat(`${entity.username} you so sneaky.`)
 })
@@ -67,8 +67,6 @@ bot.on('entitySpawn', (entity) => {
     console.log(`There's a ${entity.displayName} at ${entity.position}`)
   } else if (entity.type === 'global') {
     bot.chat('Ooh lightning!')
-  } else if (entity.type === 'orb') {
-    bot.chat('Gimme dat exp orb!')
   }
 })
 
@@ -76,14 +74,13 @@ bot.on('chat', async (username, message) => {
   if (username === bot.username) return
   if (!message.startsWith(bot_username)) return
 
-  const originalCommand = message;
-  const commandWithPrefix = message.slice(bot_username.length + 1);
-  const commandParts = commandWithPrefix.split(' ');
-  const command = commandParts[0].toLowerCase();
+  const originalCommand = message
+  const commandWithPrefix = message.slice(bot_username.length + 1)
+  const commandParts = commandWithPrefix.split(' ')
+  const command = commandParts[0].toLowerCase()
 
-  console.log(`Received command: ${command}.`);
+  console.log(`Received command: ${command}.`)
 
-  // Handle different commands
   switch (command) {
     case 'come':
       taskQueue.addTask(new Task(
@@ -92,8 +89,8 @@ bot.on('chat', async (username, message) => {
         command,
         originalCommand,
         () => tools.moveToPlayer(bot, username)
-      ));
-      break;
+      ))
+      break
 
     case 'follow':
       taskQueue.addTask(new Task(
@@ -102,37 +99,68 @@ bot.on('chat', async (username, message) => {
         command,
         originalCommand,
         () => tools.followPlayer(bot, username)
-      ));
-      break;
+      ))
+      break
 
     case 'stop':
-      await tools.stopCurrentTask(bot, taskQueue, username, currentTask);
-      break;
+      await tools.stopCurrentTask(bot, taskQueue, username, currentTask)
+      break
 
     case 'echo':
     case 'say':
-      const echoMessage = commandWithPrefix.substring(command.length + 1);
-      await tools.echoMessage(bot, echoMessage);
-      break;
+      const echoMessage = commandWithPrefix.substring(command.length + 1)
+      await tools.echoMessage(bot, echoMessage)
+      break
 
     case 'tasks':
-      await tools.listTasks(bot, taskQueue);
-      break;
+      await tools.listTasks(bot, taskQueue)
+      break
+
+    case 'mine':
+      if (commandParts.length < 3) {
+        bot.chat("Usage: mine <block> <amount>")
+        break
+      }
+      const blockName = commandParts[1]
+      const amount = parseInt(commandParts[2])
+      if (isNaN(amount) || amount <= 0) {
+        bot.chat("Please specify a valid positive integer for amount.")
+        break
+      }
+      if (!allowedBlocks.includes(blockName)) {
+        bot.chat(`I can't mine ${blockName}. Allowed blocks are: ${allowedBlocks.join(', ')}.`)
+        break
+      }
+      if (!tools.hasRequiredTool(bot, blockName)) {
+        bot.chat(`I don't have the required pickaxe to mine ${blockName}.`)
+        break
+      }
+      if (bot.inventory.emptySlotCount() < Math.ceil(amount / 64)) {
+        bot.chat(`I might not have enough inventory space to mine ${amount} ${blockName}, but I'll try.`)
+      }
+      taskQueue.addTask(new Task(
+        bot,
+        username,
+        command,
+        originalCommand,
+        async (task) => {
+          await tools.mineBlocks(bot, blockName, amount, task)
+        }
+      ))
+      break
 
     default:
-      bot.chat(`Unknown command: ${command}. Try 'come', 'follow', 'stop', 'echo', 'say', or 'tasks'.`);
-      break;
+      bot.chat(`Unknown command: ${command}. Try 'come', 'follow', 'stop', 'echo', 'say', 'tasks', or 'mine'.`)
+      break
   }
 })
 
-// Update current task when queue processes
 taskQueue.onTaskStart = (task) => {
-  currentTask = task;
+  currentTask = task
 }
 taskQueue.onTaskEnd = () => {
-  currentTask = null;
+  currentTask = null
 }
 
-// Log errors and kick reasons:
 bot.on('kicked', console.log)
 bot.on('error', console.log)
