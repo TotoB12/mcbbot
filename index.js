@@ -26,6 +26,40 @@ bot.once('spawn', () => {
   bot.chat('I\'m alive!')
 })
 
+bot.on('death', () => {
+  bot.chat('I died lol x.x')
+})
+
+bot.on('noteHeard', (block, instrument, pitch) => {
+  bot.chat(`Music for my ears! I just heard a ${instrument.name}`)
+})
+
+bot.on('playerJoined', (player) => {
+  if (player.username !== bot.username) {
+    bot.chat(`Hello, ${player.username}! Welcome to the server.`)
+  }
+})
+
+bot.on('playerLeft', (player) => {
+  if (player.username === bot.username) return
+  bot.chat(`Bye ${player.username}`)
+})
+
+bot.on('playerCollect', (collector, collected) => {
+  if (collector.type === 'player') {
+    const item = collected.getDroppedItem()
+    bot.chat(`${collector.username !== bot.username ? ("I'm so jealous. " + collector.username) : 'I '} collected ${item.count} ${item.displayName}`)
+  }
+})
+
+bot.on('entityCrouch', (entity) => {
+  bot.chat(`${entity.username} you so sneaky.`)
+})
+
+bot.on('entityEat', (entity) => {
+  bot.chat(`${entity.username}: OM NOM NOM NOMONOM. That's what you sound like.`)
+})
+
 bot.on('chat', async (username, message) => {
   if (username === bot.username) return
   if (!message.startsWith(bot_username)) return
