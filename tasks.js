@@ -49,16 +49,16 @@ class TaskQueue {
 
 class Task {
     constructor(bot, username, command, originalCommand, executeFunction) {
-        this.bot = bot
-        this.username = username
-        this.command = command
-        this.originalCommand = originalCommand
-        this.executeFunction = executeFunction
-        this.isStopped = false // Added stop flag
+        this.bot = bot;
+        this.username = username;
+        this.command = command;
+        this.originalCommand = originalCommand;
+        this.executeFunction = executeFunction;
+        this.isStopped = false;
     }
 
     async execute() {
-        await this.executeFunction(this) // Pass the task instance to the execute function
+        await this.executeFunction(this);
     }
 }
 

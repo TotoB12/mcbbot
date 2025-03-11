@@ -118,25 +118,33 @@ bot.on('chat', async (username, message) => {
 
     case 'mine':
       if (commandParts.length < 3) {
-        bot.chat("Usage: mine <block> <amount>")
-        break
+        bot.chat("Usage: mine <block> <amount>");
+        break;
       }
-      const blockName = commandParts[1]
-      const amount = parseInt(commandParts[2])
+      const blockName = commandParts[1];
+      const amount = parseInt(commandParts[2]);
       if (isNaN(amount) || amount <= 0) {
-        bot.chat("Please specify a valid positive integer for amount.")
-        break
+        bot.chat("Please specify a valid positive integer for amount.");
+        break;
       }
+      const allowedBlocks = [
+        "coal_ore", "deepslate_coal_ore", "copper_ore", "deepslate_copper_ore",
+        "iron_ore", "deepslate_iron_ore", "gold_ore", "deepslate_gold_ore",
+        "redstone_ore", "deepslate_redstone_ore", "lapis_ore", "deepslate_lapis_ore",
+        "diamond_ore", "deepslate_diamond_ore", "emerald_ore", "deepslate_emerald_ore",
+        "nether_quartz_ore", "nether_gold_ore", "ancient_debris"
+      ];
       if (!allowedBlocks.includes(blockName)) {
-        bot.chat(`I can't mine ${blockName}. Allowed blocks are: ${allowedBlocks.join(', ')}.`)
-        break
+        bot.chat(`I can't mine ${blockName}. Allowed blocks are: ${allowedBlocks.join(', ')}.`);
+        break;
       }
       if (!tools.hasRequiredTool(bot, blockName)) {
-        bot.chat(`I don't have the required pickaxe to mine ${blockName}.`)
-        break
+        bot.chat(`I don't have the required pickaxe to mine ${blockName}.`);
+        break;
       }
-      if (bot.inventory.emptySlotCount() < Math.ceil(amount / 64)) {
-        bot.chat(`I might not have enough inventory space to mine ${amount} ${blockName}, but I'll try.`)
+      const slotsNeeded = Math.ceil(amount / 64);
+      if (bot.inventory.emptySlotCount() < slotsNeeded) {
+        bot.chat(`I might not have enough inventory space to mine ${amount} ${blockName}, but I'll try.`);
       }
       taskQueue.addTask(new Task(
         bot,
@@ -144,10 +152,10 @@ bot.on('chat', async (username, message) => {
         command,
         originalCommand,
         async (task) => {
-          await tools.mineBlocks(bot, blockName, amount, task)
+          await tools.mineBlocks(bot, blockName, amount, task);
         }
-      ))
-      break
+      ));
+      break;
 
     default:
       bot.chat(`Unknown command: ${command}. Try 'come', 'follow', 'stop', 'echo', 'say', 'tasks', or 'mine'.`)
