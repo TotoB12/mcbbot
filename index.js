@@ -60,6 +60,18 @@ bot.on('entityEat', (entity) => {
   bot.chat(`${entity.username}: OM NOM NOM NOMONOM. That's what you sound like.`)
 })
 
+bot.on('entitySpawn', (entity) => {
+  if (entity.type === 'mob') {
+    console.log(`Look out! A ${entity.displayName} spawned at ${entity.position}`)
+  } else if (entity.type === 'object') {
+    console.log(`There's a ${entity.displayName} at ${entity.position}`)
+  } else if (entity.type === 'global') {
+    bot.chat('Ooh lightning!')
+  } else if (entity.type === 'orb') {
+    bot.chat('Gimme dat exp orb!')
+  }
+})
+
 bot.on('chat', async (username, message) => {
   if (username === bot.username) return
   if (!message.startsWith(bot_username)) return
