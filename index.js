@@ -8,10 +8,10 @@ const bot_username = process.env.MC_USERNAME
 const admin_username = process.env.MC_ADMIN
 
 const bot = mineflayer.createBot({
-  host: 'localhost',
+  host: '100.90.203.92',
   username: bot_username,
   auth: 'offline',
-  port: 25565,
+  port: 25568,
   version: "1.21.1",
 })
 
