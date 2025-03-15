@@ -1,8 +1,10 @@
 const mineflayer = require('mineflayer')
 const { pathfinder } = require('mineflayer-pathfinder')
+const pvp = require('mineflayer-pvp').plugin
 require('dotenv').config()
 const tools = require('./tools')
 const { TaskQueue, Task } = require('./tasks')
+const Vec3 = require('vec3').Vec3
 
 const bot_username = process.env.MC_USERNAME
 const admin_username = process.env.MC_ADMIN
@@ -16,6 +18,7 @@ const bot = mineflayer.createBot({
 })
 
 bot.loadPlugin(pathfinder)
+bot.loadPlugin(pvp)
 
 const taskQueue = new TaskQueue()
 let currentTask = null
@@ -127,13 +130,6 @@ bot.on('chat', async (username, message) => {
         bot.chat("Please specify a valid positive integer for amount.");
         break;
       }
-      const allowedBlocks = [
-        "coal_ore", "deepslate_coal_ore", "copper_ore", "deepslate_copper_ore",
-        "iron_ore", "deepslate_iron_ore", "gold_ore", "deepslate_gold_ore",
-        "redstone_ore", "deepslate_redstone_ore", "lapis_ore", "deepslate_lapis_ore",
-        "diamond_ore", "deepslate_diamond_ore", "emerald_ore", "deepslate_emerald_ore",
-        "nether_quartz_ore", "nether_gold_ore", "ancient_debris"
-      ];
       if (!allowedBlocks.includes(blockName)) {
         bot.chat(`I can't mine ${blockName}. Allowed blocks are: ${allowedBlocks.join(', ')}.`);
         break;
@@ -157,8 +153,40 @@ bot.on('chat', async (username, message) => {
       ));
       break;
 
+    case 'guard':
+      if (commandParts.length < 2) {
+        bot.chat("Usage: guard me | guard player <player> | guard <x> <y> <z>");
+        break;
+      }
+      let target;
+      if (commandParts[1].toLowerCase() === 'me') {
+        target = username; // Guard the user who sent the command
+      } else if (commandParts[1].toLowerCase() === 'player' && commandParts.length >= 3) {
+        target = commandParts[2]; // Guard the specified player
+      } else if (commandParts.length >= 4) {
+        const x = parseFloat(commandParts[1]);
+        const y = parseFloat(commandParts[2]);
+        const z = parseFloat(commandParts[3]);
+        if (isNaN(x) || isNaN(y) || isNaN(z)) {
+          bot.chat("Invalid coordinates. Usage: guard <x> <y> <z>");
+          break;
+        }
+        target = new Vec3(x, y, z); // Guard the specified coordinates
+      } else {
+        bot.chat("Usage: guard me | guard player <player> | guard <x> <y> <z>");
+        break;
+      }
+      taskQueue.addTask(new Task(
+        bot,
+        username,
+        command,
+        originalCommand,
+        (task) => tools.guard(bot, target, task)
+      ));
+      break;
+
     default:
-      bot.chat(`Unknown command: ${command}. Try 'come', 'follow', 'stop', 'echo', 'say', 'tasks', or 'mine'.`)
+      bot.chat(`Unknown command: ${command}. Try 'come', 'follow', 'stop', 'echo', 'say', 'tasks', 'mine', or 'guard'.`)
       break
   }
 })
